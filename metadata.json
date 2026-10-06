@@ -1,0 +1,6 @@
+{
+  "name": "ALIADAS CDC - Plataforma Móvil",
+  "description": "Aplicación móvil oficial de ALIADAS CDC para gestión de clientes, billetera digital, pronósticos inteligentes, pollas y resultados.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

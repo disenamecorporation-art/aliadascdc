@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --primary: #4E0A7D;
+    --primary-light: #7016ab;
+    --primary-dark: #370659;
+    --gold: #D8AE52;
+    --gold-light: #f5cf76;
+    --gold-dark: #b88d33;
+    --pink: #F25AA0;
+    --pink-light: #ff7ebb;
+    --pink-dark: #d43b83;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+
+  h1, h2, h3, .font-heading {
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(78, 10, 125, 0.2);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(78, 10, 125, 0.4);
+}
+
+/* Glassmorphism helpers */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.glass-card-purple {
+  background: linear-gradient(135deg, rgba(78, 10, 125, 0.95), rgba(55, 6, 89, 0.98));
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(216, 174, 82, 0.3);
+}
+
+.glass-card-gold {
+  background: linear-gradient(135deg, #D8AE52 0%, #E6C26E 50%, #C49839 100%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-card-pink {
+  background: linear-gradient(135deg, #F25AA0 0%, #FF74B2 50%, #DC3A84 100%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2.5s infinite;
+}
+
+/* Pulse glow */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(216, 174, 82, 0.4); }
+  50% { box-shadow: 0 0 25px rgba(242, 90, 160, 0.6); }
+}
+
+.glow-effect {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
