@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, Trophy, Flame, ChevronRight, Zap } from 'lucide-react';
+import { Sparkles, ChevronRight, MessageCircle } from 'lucide-react';
 import { TopHeader } from '../components/TopHeader';
+import { useApp } from '../context/AppContext';
+import { generateWhatsAppLink, WHATSAPP_PHONE_FORMATTED } from '../utils/whatsapp';
 
 interface CasinoHubScreenProps {
   onBack: () => void;
@@ -12,6 +14,8 @@ export const CasinoHubScreen: React.FC<CasinoHubScreenProps> = ({
   onBack,
   onSelectGame
 }) => {
+  const { currentUser } = useApp();
+
   const games = [
     {
       id: 'tragamonedas_777' as const,
@@ -48,6 +52,15 @@ export const CasinoHubScreen: React.FC<CasinoHubScreenProps> = ({
     }
   ];
 
+  const whatsappFastBuyUrl = generateWhatsAppLink({
+    tipo: 'Tragamonedas 777',
+    montoBs: 25,
+    detalle: 'Recarga y compra rápida de monedas para Tragamonedas / Casino',
+    clienteNombre: currentUser ? `${currentUser.name} ${currentUser.lastName}` : 'Cliente Aliadas',
+    cedula: currentUser?.cedula || 'N/A',
+    taquilla: currentUser?.taquillaName || 'Taquilla La 1'
+  });
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20 text-slate-800 select-none">
       <TopHeader title="Casino Tragamonedas" onBack={onBack} />
@@ -72,6 +85,34 @@ export const CasinoHubScreen: React.FC<CasinoHubScreenProps> = ({
             </div>
           </div>
         </div>
+
+        {/* WhatsApp Fast Purchase Banner */}
+        <a
+          href={whatsappFastBuyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-white border-2 border-[#25D366] p-3.5 rounded-3xl shadow-sm flex items-center justify-between gap-3 text-left hover:bg-emerald-50/50 active:scale-98 transition-all no-underline"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-sm">
+              <MessageCircle className="w-5 h-5 fill-white" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-xs font-black text-slate-900 block leading-tight">
+                Comprar Monedas por WhatsApp
+              </span>
+              <span className="text-[11px] text-emerald-700 font-bold block">
+                Atención directa: {WHATSAPP_PHONE_FORMATTED}
+              </span>
+              <span className="text-[10px] text-slate-500 block truncate">
+                Paga por Pago Móvil y recibe tus monedas al instante
+              </span>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 bg-[#25D366] text-white text-[10px] font-black rounded-xl shrink-0">
+            Chat
+          </span>
+        </a>
 
         {/* 3 Games Cards */}
         <div className="space-y-3 pt-1">

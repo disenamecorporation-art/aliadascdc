@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Building2, Smartphone, Clock } from 'lucide-react';
+import { Building2, Smartphone, Clock, MessageCircle } from 'lucide-react';
 import { TopHeader } from '../components/TopHeader';
+import { useApp } from '../context/AppContext';
+import { generateWhatsAppLink, WHATSAPP_PHONE_FORMATTED } from '../utils/whatsapp';
 
 interface DepositMethodsScreenProps {
   onBack: () => void;
@@ -11,7 +13,8 @@ export const DepositMethodsScreen: React.FC<DepositMethodsScreenProps> = ({
   onBack,
   onSuccess
 }) => {
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const { currentUser } = useApp();
+  const [, setSelectedMethod] = useState<string | null>(null);
 
   const methods = [
     {
@@ -40,11 +43,45 @@ export const DepositMethodsScreen: React.FC<DepositMethodsScreenProps> = ({
     }
   ];
 
+  const whatsappDepositUrl = generateWhatsAppLink({
+    tipo: 'Depósito / Recarga',
+    montoBs: 50,
+    detalle: 'Reporte de Pago Móvil / Transferencia para saldo en Billetera',
+    clienteNombre: currentUser ? `${currentUser.name} ${currentUser.lastName}` : 'Cliente Aliadas',
+    cedula: currentUser?.cedula || 'N/A',
+    taquilla: currentUser?.taquillaName || 'Taquilla La 1'
+  });
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20 text-slate-800 select-none">
       <TopHeader title="Depositar Dinero" onBack={onBack} />
 
       <div className="p-4 space-y-3.5 max-w-md mx-auto">
+        {/* WhatsApp Fast Deposit Card */}
+        <a
+          href={whatsappDepositUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full bg-gradient-to-r from-[#25D366]/15 via-emerald-100/50 to-[#25D366]/10 border-2 border-[#25D366] rounded-2xl p-3.5 flex items-center justify-between shadow-xs hover:bg-[#25D366]/20 active:scale-98 transition-all text-left no-underline"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <MessageCircle className="w-5 h-5 fill-white" />
+            </div>
+            <div>
+              <span className="text-xs font-black text-slate-900 block leading-tight">
+                Reportar Pago por WhatsApp
+              </span>
+              <span className="text-[11px] text-emerald-700 font-bold block">
+                Atención Taquilla: {WHATSAPP_PHONE_FORMATTED}
+              </span>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 bg-[#25D366] text-white text-[10px] font-black rounded-xl">
+            Enviar
+          </span>
+        </a>
+
         {/* 4 Cards matching Screenshot 6 */}
         {methods.map(item => (
           <button
@@ -74,7 +111,7 @@ export const DepositMethodsScreen: React.FC<DepositMethodsScreenProps> = ({
           <div className="text-xs space-y-0.5">
             <span className="font-bold text-white block">Recuerda:</span>
             <p className="text-purple-100 text-[11px] leading-snug">
-              Tu saldo se actualiza de forma inmediata.
+              Tu saldo se actualiza de forma inmediata al enviar tu comprobante a WhatsApp.
             </p>
           </div>
         </div>

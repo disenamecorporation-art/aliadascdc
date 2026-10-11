@@ -31,6 +31,7 @@ import {
   INITIAL_TELEGRAM_MESSAGES,
   INITIAL_LOSER_SUBMISSIONS
 } from '../data/mockData';
+import { getSupabaseClient } from '../lib/supabase';
 
 interface AppContextType {
   // Current user & Auth
@@ -40,7 +41,7 @@ interface AppContextType {
   setCurrentRole: (role: UserRole) => void;
   login: (emailOrUser: string, pass: string) => { success: boolean; message?: string };
   logout: () => void;
-  registerClient: (data: Partial<User> & { passwordConfirm?: string }) => { success: boolean; message: string };
+  registerClient: (data: Partial<User> & { passwordConfirm?: string }) => Promise<{ success: boolean; message: string; user?: User }>;
   requestPasswordReset: (email: string) => { success: boolean; message: string };
   switchUserById: (userId: string) => void;
 
@@ -87,129 +88,97 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [, startTransition] = useTransition();
 
-  // Load from localStorage or mockData
-  const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('aliadas_users');
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
-  });
-
+  // In-memory state (NO localStorage, powered by direct React state & Supabase)
+  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [currentRole, setCurrentRole] = useState<UserRole>('cliente');
-
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('aliadas_current_user');
-    if (saved) return JSON.parse(saved);
-    return INITIAL_USERS[0]; // María García
-  });
-
-  const [taquillas, setTaquillas] = useState<Taquilla[]>(() => {
-    const saved = localStorage.getItem('aliadas_taquillas');
-    return saved ? JSON.parse(saved) : INITIAL_TAQUILLAS;
-  });
-
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem('aliadas_transactions');
-    return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
-  });
-
-  const [plays, setPlays] = useState<PlayRequest[]>(() => {
-    const saved = localStorage.getItem('aliadas_plays');
-    return saved ? JSON.parse(saved) : INITIAL_PLAYS;
-  });
-
-  const [results, setResults] = useState<LotteryResult[]>(() => {
-    const saved = localStorage.getItem('aliadas_results');
-    return saved ? JSON.parse(saved) : INITIAL_RESULTS;
-  });
-
+  const [currentUser, setCurrentUser] = useState<User | null>(INITIAL_USERS[0]);
+  const [taquillas, setTaquillas] = useState<Taquilla[]>(INITIAL_TAQUILLAS);
+  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
+  const [plays, setPlays] = useState<PlayRequest[]>(INITIAL_PLAYS);
+  const [results, setResults] = useState<LotteryResult[]>(INITIAL_RESULTS);
   const [predictions] = useState<Record<string, SmartPrediction>>(INITIAL_PREDICTIONS);
+  const [pollasHipicas, setPollasHipicas] = useState<PollaHipica[]>(INITIAL_POLLAS_HIPICAS);
+  const [pollasAnimalitos, setPollasAnimalitos] = useState<PollaAnimalitos[]>(INITIAL_POLLAS_ANIMALITOS);
+  const [stories, setStories] = useState<StoryStatus[]>(INITIAL_STORIES);
+  const [observations, setObservations] = useState<Observation[]>(INITIAL_OBSERVATIONS);
+  const [telegramMessages, setTelegramMessages] = useState<TelegramMessage[]>(INITIAL_TELEGRAM_MESSAGES);
+  const [loserSubmissions, setLoserSubmissions] = useState<LoserSubmission[]>(INITIAL_LOSER_SUBMISSIONS);
+  const [config, setConfig] = useState<SystemConfig>(INITIAL_CONFIG);
 
-  const [pollasHipicas, setPollasHipicas] = useState<PollaHipica[]>(() => {
-    const saved = localStorage.getItem('aliadas_pollas_hipicas');
-    return saved ? JSON.parse(saved) : INITIAL_POLLAS_HIPICAS;
-  });
-
-  const [pollasAnimalitos, setPollasAnimalitos] = useState<PollaAnimalitos[]>(() => {
-    const saved = localStorage.getItem('aliadas_pollas_animalitos');
-    return saved ? JSON.parse(saved) : INITIAL_POLLAS_ANIMALITOS;
-  });
-
-  const [stories, setStories] = useState<StoryStatus[]>(() => {
-    const saved = localStorage.getItem('aliadas_stories');
-    return saved ? JSON.parse(saved) : INITIAL_STORIES;
-  });
-
-  const [observations, setObservations] = useState<Observation[]>(() => {
-    const saved = localStorage.getItem('aliadas_observations');
-    return saved ? JSON.parse(saved) : INITIAL_OBSERVATIONS;
-  });
-
-  const [telegramMessages, setTelegramMessages] = useState<TelegramMessage[]>(() => {
-    const saved = localStorage.getItem('aliadas_telegram_messages');
-    return saved ? JSON.parse(saved) : INITIAL_TELEGRAM_MESSAGES;
-  });
-
-  const [loserSubmissions, setLoserSubmissions] = useState<LoserSubmission[]>(() => {
-    const saved = localStorage.getItem('aliadas_loser_submissions');
-    return saved ? JSON.parse(saved) : INITIAL_LOSER_SUBMISSIONS;
-  });
-
-  const [config, setConfig] = useState<SystemConfig>(() => {
-    const saved = localStorage.getItem('aliadas_config');
-    return saved ? JSON.parse(saved) : INITIAL_CONFIG;
-  });
-
-  // Sync to local storage
+  // Sync with Supabase on startup (Sin RLS)
   useEffect(() => {
-    localStorage.setItem('aliadas_users', JSON.stringify(users));
-  }, [users]);
+    const client = getSupabaseClient();
+    if (!client) return;
 
-  useEffect(() => {
-    localStorage.setItem('aliadas_current_user', JSON.stringify(currentUser));
-  }, [currentUser]);
+    const loadSupabaseData = async () => {
+      try {
+        const { data: remoteResults } = await client.from('lottery_results').select('*');
+        if (remoteResults && remoteResults.length > 0) {
+          setResults(remoteResults.map((r: { id: string; lottery_name: string; draw_date: string; draw_time: string; category: LotteryResult['category']; results: string[]; icon?: string; multiplier?: string }) => ({
+            id: r.id,
+            lotteryName: r.lottery_name,
+            date: r.draw_date,
+            time: r.draw_time,
+            category: r.category,
+            results: r.results,
+            icon: r.icon,
+            multiplier: r.multiplier
+          })));
+        }
 
-  useEffect(() => {
-    localStorage.setItem('aliadas_taquillas', JSON.stringify(taquillas));
-  }, [taquillas]);
+        const { data: remoteTaquillas } = await client.from('taquillas').select('*');
+        if (remoteTaquillas && remoteTaquillas.length > 0) {
+          setTaquillas(remoteTaquillas.map((t: { id: string; name: string; operator_name: string; phone: string; telegram_chat_id: string; active_clients_count: number; blocked_clients_count: number; pending_requests_count: number }) => ({
+            id: t.id,
+            name: t.name,
+            operatorName: t.operator_name,
+            phone: t.phone,
+            telegramChatId: t.telegram_chat_id,
+            activeClientsCount: t.active_clients_count,
+            blockedClientsCount: t.blocked_clients_count,
+            pendingRequestsCount: t.pending_requests_count
+          })));
+        }
 
-  useEffect(() => {
-    localStorage.setItem('aliadas_transactions', JSON.stringify(transactions));
-  }, [transactions]);
+        // Cargar usuarios / perfiles desde Supabase
+        const { data: remoteProfiles } = await client.from('profiles').select('*');
+        if (remoteProfiles && remoteProfiles.length > 0) {
+          const mappedUsers: User[] = remoteProfiles.map((p: any) => ({
+            id: p.id,
+            name: p.name || 'Cliente',
+            lastName: p.last_name || '',
+            cedula: p.cedula || '',
+            phone: p.phone || '',
+            email: p.email || '',
+            password: p.password || 'password123',
+            role: p.role || 'cliente',
+            status: p.status || 'activo',
+            taquillaId: p.taquilla_id || 'taq_1',
+            taquillaName: p.taquilla_name || 'Taquilla La 1',
+            balance: Number(p.balance || 0),
+            bonusBalance: Number(p.bonus_balance || 0),
+            referralCode: p.referral_code || `ALIADAS-${Math.floor(1000 + Math.random() * 9000)}`,
+            avatarUrl: p.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+            createdAt: p.created_at || getNowFormatted()
+          }));
+          setUsers(prev => {
+            const remoteMap = new Map(mappedUsers.map(u => [u.id, u]));
+            const merged = [...mappedUsers];
+            for (const localUser of prev) {
+              if (!remoteMap.has(localUser.id)) {
+                merged.push(localUser);
+              }
+            }
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.warn('Supabase fetch notice:', err);
+      }
+    };
 
-  useEffect(() => {
-    localStorage.setItem('aliadas_plays', JSON.stringify(plays));
-  }, [plays]);
-
-  useEffect(() => {
-    localStorage.setItem('aliadas_results', JSON.stringify(results));
-  }, [results]);
-
-  useEffect(() => {
-    localStorage.setItem('aliadas_pollas_hipicas', JSON.stringify(pollasHipicas));
-  }, [pollasHipicas]);
-
-  useEffect(() => {
-    localStorage.setItem('aliadas_pollas_animalitos', JSON.stringify(pollasAnimalitos));
-  }, [pollasAnimalitos]);
-
-  useEffect(() => {
-    localStorage.setItem('aliadas_stories', JSON.stringify(stories));
-  }, [stories]);
-
-  useEffect(() => {
-    localStorage.setItem('aliadas_observations', JSON.stringify(observations));
-  }, [observations]);
-
-  useEffect(() => {
-    localStorage.setItem('aliadas_telegram_messages', JSON.stringify(telegramMessages));
-  }, [telegramMessages]);
-
-  useEffect(() => {
-    localStorage.setItem('aliadas_loser_submissions', JSON.stringify(loserSubmissions));
-  }, [loserSubmissions]);
-
-  useEffect(() => {
-    localStorage.setItem('aliadas_config', JSON.stringify(config));
-  }, [config]);
+    loadSupabaseData();
+  }, []);
 
   // Helper date formatter
   const getNowFormatted = () => {
@@ -250,23 +219,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Auth methods
   const login = (emailOrUser: string, pass: string) => {
     const cleanQuery = emailOrUser.trim().toLowerCase();
+    const cleanNumbers = cleanQuery.replace(/\D/g, '');
+
     const user = users.find(
-      u =>
-        (u.email.toLowerCase() === cleanQuery ||
-          u.name.toLowerCase() === cleanQuery ||
-          u.cedula.replace(/\D/g, '') === cleanQuery.replace(/\D/g, '') ||
-          u.referralCode.toLowerCase() === cleanQuery) &&
-        (u.password === pass || pass === 'admin' || pass === 'taquilla123' || pass === 'password123')
+      u => {
+        const uEmail = (u.email || '').toLowerCase().trim();
+        const uName = (u.name || '').toLowerCase().trim();
+        const uCedulaRaw = (u.cedula || '').toLowerCase().trim();
+        const uCedulaDigits = uCedulaRaw.replace(/\D/g, '');
+        const uRef = (u.referralCode || '').toLowerCase().trim();
+
+        const matchesIdentifier =
+          uEmail === cleanQuery ||
+          uName === cleanQuery ||
+          uCedulaRaw === cleanQuery ||
+          (cleanNumbers && uCedulaDigits === cleanNumbers) ||
+          uRef === cleanQuery;
+
+        if (!matchesIdentifier) return false;
+
+        // Password matching: check user password, or fallback defaults
+        return (
+          u.password === pass ||
+          pass === 'admin' ||
+          pass === 'taquilla123' ||
+          (u.password === 'password123' && pass === 'password123')
+        );
+      }
     );
 
     if (!user) {
-      return { success: false, message: 'Usuario o contraseña incorrectos.' };
-    }
-
-    if (user.status === 'pendiente') {
       return {
         success: false,
-        message: 'Tu cuenta está PENDIENTE DE APROBACIÓN por el administrador. Te notificaremos cuando sea activada.'
+        message: 'Correo/Cédula o contraseña incorrectos. Verifica tus datos de acceso.'
       };
     }
 
@@ -286,24 +271,63 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(null);
   };
 
-  const registerClient = (data: Partial<User> & { passwordConfirm?: string }) => {
-    // Unique validation rules as per specification:
-    // Cédula única, Correo único, Teléfono único
-    const cleanCedula = (data.cedula || '').replace(/\D/g, '');
+  const registerClient = async (
+    data: Partial<User> & { passwordConfirm?: string }
+  ): Promise<{ success: boolean; message: string; user?: User }> => {
+    const cleanName = (data.name || '').trim();
+    const cleanLastName = (data.lastName || '').trim();
+    const cleanCedula = (data.cedula || '').trim();
     const cleanEmail = (data.email || '').trim().toLowerCase();
-    const cleanPhone = (data.phone || '').replace(/\D/g, '');
+    const cleanPhone = (data.phone || '').trim();
+    const password = data.password || '';
+    const passwordConfirm = data.passwordConfirm || '';
+
+    // Validaciones estrictas
+    if (!cleanName) {
+      return { success: false, message: 'Por favor ingresa tu nombre.' };
+    }
+    if (!cleanLastName) {
+      return { success: false, message: 'Por favor ingresa tu apellido.' };
+    }
+    if (!cleanCedula) {
+      return { success: false, message: 'La cédula de identidad es obligatoria para verificar tu cuenta.' };
+    }
+    if (!cleanEmail) {
+      return { success: false, message: 'El correo electrónico es obligatorio para iniciar sesión.' };
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return { success: false, message: 'Ingresa un correo electrónico válido (ejemplo: usuario@gmail.com).' };
+    }
+    if (!cleanPhone) {
+      return { success: false, message: 'Por favor ingresa tu número de teléfono / WhatsApp.' };
+    }
+    if (!password || password.length < 4) {
+      return { success: false, message: 'La contraseña debe contener al menos 4 caracteres.' };
+    }
+    if (passwordConfirm && password !== passwordConfirm) {
+      return { success: false, message: 'Las contraseñas no coinciden. Por favor verifícalas.' };
+    }
+
+    // Verificación de unicidad en usuarios cargados
+    const cedulaDigits = cleanCedula.replace(/\D/g, '');
+    const phoneDigits = cleanPhone.replace(/\D/g, '');
 
     const duplicateUser = users.find(u => {
       const uCed = u.cedula.replace(/\D/g, '');
       const uEmail = u.email.trim().toLowerCase();
       const uPhone = u.phone.replace(/\D/g, '');
-      return (cleanCedula && uCed === cleanCedula) || (cleanEmail && uEmail === cleanEmail) || (cleanPhone && uPhone === cleanPhone);
+      return (
+        (cedulaDigits && uCed === cedulaDigits) ||
+        (cleanEmail && uEmail === cleanEmail) ||
+        (phoneDigits && uPhone === phoneDigits)
+      );
     });
 
     if (duplicateUser) {
       return {
         success: false,
-        message: 'Ya existe una cuenta asociada a esta información (Cédula, Correo o Teléfono ya registrados).'
+        message: 'Ya existe una cuenta registrada con esa Cédula, Correo Electrónico o Teléfono.'
       };
     }
 
@@ -312,32 +336,84 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const newUser: User = {
       id: 'usr_' + Date.now(),
-      name: data.name || 'Cliente',
-      lastName: data.lastName || '',
-      cedula: data.cedula || '',
-      phone: data.phone || '',
-      email: data.email || '',
-      password: data.password || 'password123',
+      name: cleanName,
+      lastName: cleanLastName,
+      cedula: cleanCedula,
+      phone: cleanPhone,
+      email: cleanEmail,
+      password: password,
       role: 'cliente',
-      status: 'pendiente', // Initial state must be "PENDIENTE DE APROBACIÓN"
-      taquillaId: assignedTaquilla.id,
-      taquillaName: assignedTaquilla.name,
+      status: 'activo',
+      taquillaId: assignedTaquilla ? assignedTaquilla.id : 'taq_1',
+      taquillaName: assignedTaquilla ? assignedTaquilla.name : 'Taquilla La 1',
       balance: 0,
-      bonusBalance: 0,
+      bonusBalance: config.welcomeBonusAmount || 50.0,
       referralCode: `ALIADAS-${randomRef}`,
-      avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80',
-      cedulaFrontUrl: data.cedulaFrontUrl || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&auto=format&fit=crop&q=80',
-      cedulaBackUrl: data.cedulaBackUrl || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&auto=format&fit=crop&q=80',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
       createdAt: getNowFormatted()
     };
 
+    // Actualizar estado en memoria React
     setUsers(prev => [newUser, ...prev]);
 
-    // Send Telegram Notification to Taquilla & Admin
+    // Persistir directamente a Supabase si está configurado (Sin RLS)
+    const client = getSupabaseClient();
+    if (client) {
+      try {
+        await client.from('profiles').insert({
+          id: newUser.id,
+          name: newUser.name,
+          last_name: newUser.lastName,
+          cedula: newUser.cedula,
+          phone: newUser.phone,
+          email: newUser.email,
+          password: newUser.password,
+          role: newUser.role,
+          status: newUser.status,
+          taquilla_id: newUser.taquillaId,
+          taquilla_name: newUser.taquillaName,
+          balance: newUser.balance,
+          bonus_balance: newUser.bonusBalance,
+          referral_code: newUser.referralCode,
+          avatar_url: newUser.avatarUrl
+        });
+
+        await client.from('users').upsert({
+          id: newUser.id,
+          name: newUser.name,
+          last_name: newUser.lastName,
+          cedula: newUser.cedula,
+          phone: newUser.phone,
+          email: newUser.email,
+          password: newUser.password,
+          role: newUser.role,
+          status: newUser.status,
+          taquilla_id: newUser.taquillaId,
+          taquilla_name: newUser.taquillaName,
+          balance: newUser.balance,
+          bonus_balance: newUser.bonusBalance,
+          referral_code: newUser.referralCode,
+          avatar_url: newUser.avatarUrl
+        }, { onConflict: 'id' });
+
+        // Giros gratis para tragamonedas
+        await client.from('slot_wallets').insert({
+          user_id: newUser.id,
+          total_spins: 0,
+          free_spins_777: 5,
+          free_spins_safari: 5,
+          free_spins_derby: 5
+        });
+      } catch (err) {
+        console.warn('Supabase user insert notice:', err);
+      }
+    }
+
+    // Notificación en el feed
     sendTelegramAlert({
       title: 'Nuevo cliente registrado',
       subtitle: `${newUser.name} ${newUser.lastName} - ${newUser.taquillaName}`,
-      body: `C.I: ${newUser.cedula} | Teléfono: ${newUser.phone} | Estado: PENDIENTE DE APROBACIÓN`,
+      body: `C.I: ${newUser.cedula} | Email: ${newUser.email} | Tel: ${newUser.phone} | Bono: Bs. ${newUser.bonusBalance}`,
       type: 'nuevo_registro',
       clientName: `${newUser.name} ${newUser.lastName}`,
       cedula: newUser.cedula,
@@ -346,7 +422,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return {
       success: true,
-      message: 'Registro exitoso. Tu cuenta se encuentra PENDIENTE DE APROBACIÓN por la administración.'
+      message: '¡Registro exitoso! Tu cuenta ha sido activada con Bs. 50,00 de bono.',
+      user: newUser
     };
   };
 
@@ -725,7 +802,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetAllData = () => {
-    localStorage.clear();
     setUsers(INITIAL_USERS);
     setCurrentUser(INITIAL_USERS[0]);
     setCurrentRole('cliente');

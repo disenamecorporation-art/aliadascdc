@@ -1,13 +1,38 @@
 import React, { useState } from 'react';
+import { MessageCircle, CheckCircle2 } from 'lucide-react';
 import { TopHeader } from '../components/TopHeader';
+import { useApp } from '../context/AppContext';
+import { generateWhatsAppLink, WHATSAPP_PHONE_FORMATTED } from '../utils/whatsapp';
 
 interface PollaAnimalitosScreenProps {
   onBack: () => void;
 }
 
 export const PollaAnimalitosScreen: React.FC<PollaAnimalitosScreenProps> = ({ onBack }) => {
+  const { currentUser } = useApp();
   const [date, setDate] = useState('Hoy');
   const [fee, setFee] = useState('Bs. 10,00');
+  const [ticketCreated, setTicketCreated] = useState(false);
+
+  const getNumericFee = () => {
+    if (fee.includes('10')) return 10;
+    if (fee.includes('20')) return 20;
+    if (fee.includes('50')) return 50;
+    return 10;
+  };
+
+  const whatsappUrl = generateWhatsAppLink({
+    tipo: 'Polla Animalitos',
+    montoBs: getNumericFee(),
+    detalle: `Ruleta Animalitos Fecha: ${date}`,
+    clienteNombre: currentUser ? `${currentUser.name} ${currentUser.lastName}` : 'Cliente Aliadas',
+    cedula: currentUser?.cedula || 'N/A',
+    taquilla: currentUser?.taquillaName || 'Taquilla La 1'
+  });
+
+  const handleCrearPolla = () => {
+    setTicketCreated(true);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 text-slate-800 select-none">
@@ -33,6 +58,18 @@ export const PollaAnimalitosScreen: React.FC<PollaAnimalitosScreenProps> = ({ on
           </h2>
         </div>
 
+        {ticketCreated && (
+          <div className="bg-emerald-50 border border-emerald-400 p-3 rounded-2xl text-emerald-800 text-xs space-y-1.5 animate-fadeIn">
+            <div className="flex items-center gap-1.5 font-bold">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>¡Ticket de Animalitos Generado!</span>
+            </div>
+            <p className="text-[11px] text-emerald-700 leading-snug">
+              Envía tu ticket al WhatsApp <strong>{WHATSAPP_PHONE_FORMATTED}</strong> para validarlo y sellarlo al instante con el taquillero.
+            </p>
+          </div>
+        )}
+
         {/* Form fields matching Screenshot 10 */}
         <div className="space-y-3 pt-1">
           <div className="space-y-1">
@@ -41,7 +78,10 @@ export const PollaAnimalitosScreen: React.FC<PollaAnimalitosScreenProps> = ({ on
             </label>
             <select
               value={date}
-              onChange={e => setDate(e.target.value)}
+              onChange={e => {
+                setDate(e.target.value);
+                setTicketCreated(false);
+              }}
               className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden"
             >
               <option value="Hoy">Hoy</option>
@@ -56,7 +96,10 @@ export const PollaAnimalitosScreen: React.FC<PollaAnimalitosScreenProps> = ({ on
             </label>
             <select
               value={fee}
-              onChange={e => setFee(e.target.value)}
+              onChange={e => {
+                setFee(e.target.value);
+                setTicketCreated(false);
+              }}
               className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden"
             >
               <option value="Bs. 10,00">Bs. 10,00</option>
@@ -65,10 +108,21 @@ export const PollaAnimalitosScreen: React.FC<PollaAnimalitosScreenProps> = ({ on
             </select>
           </div>
 
+          {/* Venta Directa por WhatsApp Button */}
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3.5 px-4 bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md active:scale-98 transition-all text-center no-underline"
+          >
+            <MessageCircle className="w-4 h-4 fill-white shrink-0" />
+            <span>Comprar Ticket por WhatsApp ({WHATSAPP_PHONE_FORMATTED})</span>
+          </a>
+
           {/* Purple Button: Crear Polla */}
           <button
-            onClick={() => {}}
-            className="w-full mt-4 py-3 bg-[#4E0A7D] text-white font-bold rounded-xl text-xs active:scale-98 transition-all"
+            onClick={handleCrearPolla}
+            className="w-full py-3 bg-[#4E0A7D] hover:bg-[#600f99] text-white font-bold rounded-xl text-xs active:scale-98 transition-all"
           >
             Crear Polla
           </button>

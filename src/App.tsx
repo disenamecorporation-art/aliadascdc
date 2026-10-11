@@ -24,6 +24,7 @@ import { AdminDashboardScreen } from './screens/AdminDashboardScreen';
 import { ObservationsBlockScreen } from './screens/ObservationsBlockScreen';
 import { TelegramFeedScreen } from './screens/TelegramFeedScreen';
 import { LosersOfTheWeekScreen } from './screens/LosersOfTheWeekScreen';
+import { ApiSettingsScreen } from './screens/ApiSettingsScreen';
 
 // 3 Slot Machines & Casino Hub
 import { CasinoHubScreen } from './screens/CasinoHubScreen';
@@ -37,6 +38,7 @@ import { UserRole } from './types';
 const MainAppContent: React.FC = () => {
   const { currentRole, setCurrentRole, logout } = useApp();
   const [currentScreen, setCurrentScreen] = useState<string>('splash');
+  const [prefilledIdentifier, setPrefilledIdentifier] = useState<string>('');
   const [activeTab, setActiveTab] = useState<TabType>('inicio');
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [targetObsUserId, setTargetObsUserId] = useState<string | undefined>(undefined);
@@ -89,6 +91,7 @@ const MainAppContent: React.FC = () => {
       {/* 2. Login */}
       {currentScreen === 'login' && (
         <LoginScreen
+          initialIdentifier={prefilledIdentifier}
           onNavigateRegister={() => setCurrentScreen('registro')}
           onNavigateForgotPassword={() => setCurrentScreen('olvido_clave')}
           onNavigateRoleSelector={() => setCurrentScreen('role_selector')}
@@ -220,7 +223,10 @@ const MainAppContent: React.FC = () => {
       {currentScreen === 'registro' && (
         <RegisterScreen
           onBack={() => setCurrentScreen('login')}
-          onRegistered={() => setCurrentScreen('login')}
+          onRegistered={(identifier) => {
+            if (identifier) setPrefilledIdentifier(identifier);
+            setCurrentScreen('login');
+          }}
         />
       )}
 
@@ -238,7 +244,13 @@ const MainAppContent: React.FC = () => {
             setCurrentScreen('observaciones');
           }}
           onNavigateTelegramFeed={() => setCurrentScreen('telegram_feed')}
+          onNavigateApiSettings={() => setCurrentScreen('api_settings')}
         />
+      )}
+
+      {/* 18.1 Configuración de APIs */}
+      {currentScreen === 'api_settings' && (
+        <ApiSettingsScreen onBack={() => setCurrentScreen('admin_dashboard')} />
       )}
 
       {/* 19. Observaciones y bloqueo */}

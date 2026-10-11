@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
-import { Mail, Send } from 'lucide-react';
+import { Mail, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import { TopHeader } from '../components/TopHeader';
+import { useApp } from '../context/AppContext';
 
 interface ForgotPasswordScreenProps {
   onBack: () => void;
 }
 
 export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBack }) => {
+  const { requestPasswordReset } = useApp();
   const [email, setEmail] = useState('');
+  const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim()) return;
+    const res = requestPasswordReset(email.trim());
+    setFeedback(res);
   };
 
   return (
@@ -27,15 +33,36 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
           <h2 className="text-base font-extrabold text-slate-900 font-heading">
             Solicita tu clave
           </h2>
+          <p className="text-xs text-slate-500">
+            Ingresa el correo electrónico registrado con tu cuenta
+          </p>
         </div>
 
-        {/* Form matching Screenshot 16 */}
+        {feedback && (
+          <div
+            className={`p-3.5 rounded-xl text-xs flex items-start gap-2.5 ${
+              feedback.success
+                ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                : 'bg-rose-50 border border-rose-200 text-rose-800'
+            }`}
+          >
+            {feedback.success ? (
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
+            ) : (
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+            )}
+            <span className="font-medium leading-relaxed">{feedback.message}</span>
+          </div>
+        )}
+
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            placeholder="Correo electrónico"
+            placeholder="Correo electrónico registrado"
+            required
             className="w-full px-3.5 py-3 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden placeholder:text-slate-400"
           />
 
@@ -44,7 +71,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onBa
             type="submit"
             className="w-full py-3 bg-[#4E0A7D] text-white font-bold rounded-xl text-xs active:scale-98 transition-all"
           >
-            Enviar
+            Enviar Solicitud
           </button>
         </form>
 

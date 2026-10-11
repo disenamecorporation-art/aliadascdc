@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { ChevronRight, Flame } from 'lucide-react';
+import { ChevronRight, Flame, MessageCircle } from 'lucide-react';
 import { TopHeader } from '../components/TopHeader';
+import { useApp } from '../context/AppContext';
+import { generateWhatsAppLink, WHATSAPP_PHONE_FORMATTED } from '../utils/whatsapp';
 
 interface LotterySelectionScreenProps {
   onBack: () => void;
@@ -16,13 +18,14 @@ export const LotterySelectionScreen: React.FC<LotterySelectionScreenProps> = ({
   onNavigatePollaAnimalitos,
   onNavigateTragamonedas
 }) => {
+  const { currentUser } = useApp();
   const [activeTab, setActiveTab] = useState<'loterias' | 'polla_hipica' | 'animalitos'>('loterias');
 
   const lotteries = [
     {
       id: 'tragamonedas',
-      name: 'Tragamonedas 777 (Casino & Free Spins)',
-      type: '(Jackpot x100 / Giros Gratis)',
+      name: 'Tragamonedas (3 Juegos Clásicos)',
+      type: '(Jackpot x150 / Free Spins)',
       icon: '🎰',
       isGold: true
     },
@@ -64,6 +67,15 @@ export const LotterySelectionScreen: React.FC<LotterySelectionScreenProps> = ({
       icon: '🏇'
     }
   ];
+
+  const whatsappDirectTicketUrl = generateWhatsAppLink({
+    tipo: 'Ticket de Lotería',
+    montoBs: 20,
+    detalle: 'Compra de tickets de Loterías / Polla / Tragamonedas',
+    clienteNombre: currentUser ? `${currentUser.name} ${currentUser.lastName}` : 'Cliente Aliadas',
+    cedula: currentUser?.cedula || 'N/A',
+    taquilla: currentUser?.taquillaName || 'Taquilla La 1'
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 text-slate-800 select-none">
@@ -109,6 +121,31 @@ export const LotterySelectionScreen: React.FC<LotterySelectionScreenProps> = ({
             Animalitos
           </button>
         </div>
+
+        {/* WhatsApp Direct Sale Banner */}
+        <a
+          href={whatsappDirectTicketUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-white border-2 border-[#25D366] p-3 rounded-2xl shadow-xs flex items-center justify-between gap-3 text-left hover:bg-emerald-50/40 active:scale-98 transition-all no-underline"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <MessageCircle className="w-4 h-4 fill-white" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-xs font-black text-slate-900 block leading-tight">
+                Venta de Tickets por WhatsApp
+              </span>
+              <span className="text-[10px] text-emerald-700 font-bold block">
+                Envía tu jugada al {WHATSAPP_PHONE_FORMATTED}
+              </span>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 bg-[#25D366] text-white text-[10px] font-black rounded-xl shrink-0">
+            Comprar
+          </span>
+        </a>
 
         {/* List of Lotteries & Games matching Screenshot 7 */}
         <div className="space-y-3">

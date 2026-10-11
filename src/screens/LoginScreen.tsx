@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { User as UserIcon, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { BottomWave } from '../components/BottomWave';
 import { useApp } from '../context/AppContext';
 
 interface LoginScreenProps {
+  initialIdentifier?: string;
   onNavigateRegister: () => void;
   onNavigateForgotPassword: () => void;
   onNavigateRoleSelector: () => void;
@@ -12,19 +13,47 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
+  initialIdentifier = '',
   onNavigateRegister,
   onNavigateForgotPassword,
   onLoginSuccess
 }) => {
   const { login } = useApp();
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState(initialIdentifier);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialIdentifier) {
+      setIdentifier(initialIdentifier);
+    }
+  }, [initialIdentifier]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login(username || 'maria.garcia@gmail.com', password || 'password123');
-    onLoginSuccess();
+    setErrorMessage(null);
+
+    const cleanId = identifier.trim();
+    if (!cleanId) {
+      setErrorMessage('Por favor ingresa tu correo electrónico o cédula.');
+      return;
+    }
+    if (!password) {
+      setErrorMessage('Por favor ingresa tu contraseña.');
+      return;
+    }
+
+    setIsLoading(true);
+    const res = login(cleanId, password);
+    setIsLoading(false);
+
+    if (res.success) {
+      onLoginSuccess();
+    } else {
+      setErrorMessage(res.message || 'Correo/Cédula o contraseña incorrectos.');
+    }
   };
 
   return (
@@ -48,14 +77,29 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="text-center mb-6"
+          className="text-center mb-5"
         >
           <h2 className="text-xl font-bold text-slate-900 font-heading">
             Iniciar Sesión
           </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            Ingresa con tu correo electrónico o tu cédula
+          </p>
         </motion.div>
 
-        {/* Form matching Screenshot 2 */}
+        {/* Error message */}
+        {errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-4 bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs flex items-start gap-2.5"
+          >
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+            <span className="font-medium leading-tight">{errorMessage}</span>
+          </motion.div>
+        )}
+
+        {/* Form */}
         <motion.form
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -63,51 +107,68 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           onSubmit={handleSubmit}
           className="space-y-4"
         >
-          {/* Usuario Input */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <UserIcon className="w-5 h-5 text-slate-400" />
+          {/* Correo o Cédula Input */}
+          <div className="space-y-1">
+            <label className="block text-[11px] font-bold text-slate-700">
+              Correo Electrónico o Cédula
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <Mail className="w-4 h-4 text-slate-400" />
+              </div>
+              <input
+                type="text"
+                value={identifier}
+                onChange={e => {
+                  setIdentifier(e.target.value);
+                  if (errorMessage) setErrorMessage(null);
+                }}
+                placeholder="ejemplo@correo.com o V-12345678"
+                className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#4E0A7D] placeholder:text-slate-400 text-slate-800"
+              />
             </div>
-            <input
-              type="text"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              placeholder="Usuario"
-              className="w-full pl-11 pr-4 py-3 bg-white border border-slate-300 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#4E0A7D] placeholder:text-slate-400 text-slate-800"
-            />
           </div>
 
           {/* Contraseña Input */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <Lock className="w-5 h-5 text-slate-400" />
+          <div className="space-y-1">
+            <label className="block text-[11px] font-bold text-slate-700">
+              Contraseña
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <Lock className="w-4 h-4 text-slate-400" />
+              </div>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={e => {
+                  setPassword(e.target.value);
+                  if (errorMessage) setErrorMessage(null);
+                }}
+                placeholder="Tu contraseña"
+                className="w-full pl-10 pr-11 py-3 bg-white border border-slate-300 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#4E0A7D] placeholder:text-slate-400 text-slate-800"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Contraseña"
-              className="w-full pl-11 pr-11 py-3 bg-white border border-slate-300 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-[#4E0A7D] placeholder:text-slate-400 text-slate-800"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
-            >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
           </div>
 
           {/* Ingresar Button */}
           <button
             type="submit"
-            className="w-full py-3.5 bg-gradient-to-r from-[#4E0A7D] via-[#5e0d96] to-[#3a065e] hover:opacity-95 text-white font-bold rounded-xl shadow-md active:scale-98 transition-all text-sm"
+            disabled={isLoading}
+            className="w-full py-3.5 bg-gradient-to-r from-[#4E0A7D] via-[#5e0d96] to-[#3a065e] hover:opacity-95 text-white font-bold rounded-xl shadow-md active:scale-98 transition-all text-sm disabled:opacity-50"
           >
-            Ingresar
+            {isLoading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </motion.form>
 
-        {/* Links matching Screenshot 2 */}
+        {/* Links */}
         <div className="text-center mt-4 space-y-3">
           <button
             type="button"
@@ -123,7 +184,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               onClick={onNavigateRegister}
               className="text-[#4E0A7D] font-bold hover:underline"
             >
-              Regístrate
+              Regístrate aquí
             </button>
           </p>
         </div>

@@ -1,20 +1,45 @@
 import React, { useState } from 'react';
+import { MessageCircle, CheckCircle2 } from 'lucide-react';
 import { TopHeader } from '../components/TopHeader';
+import { useApp } from '../context/AppContext';
+import { generateWhatsAppLink, WHATSAPP_PHONE_FORMATTED } from '../utils/whatsapp';
 
 interface PollaHipicaScreenProps {
   onBack: () => void;
 }
 
 export const PollaHipicaScreen: React.FC<PollaHipicaScreenProps> = ({ onBack }) => {
+  const { currentUser } = useApp();
   const [date, setDate] = useState('Hoy');
   const [fee, setFee] = useState('Bs. 10,00');
+  const [ticketCreated, setTicketCreated] = useState(false);
+
+  const getNumericFee = () => {
+    if (fee.includes('10')) return 10;
+    if (fee.includes('20')) return 20;
+    if (fee.includes('50')) return 50;
+    return 10;
+  };
+
+  const whatsappUrl = generateWhatsAppLink({
+    tipo: 'Polla Hípica',
+    montoBs: getNumericFee(),
+    detalle: `Carreras Fecha: ${date}`,
+    clienteNombre: currentUser ? `${currentUser.name} ${currentUser.lastName}` : 'Cliente Aliadas',
+    cedula: currentUser?.cedula || 'N/A',
+    taquilla: currentUser?.taquillaName || 'Taquilla La 1'
+  });
+
+  const handleCrearPolla = () => {
+    setTicketCreated(true);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 text-slate-800 select-none">
       <TopHeader title="Polla Hípica" onBack={onBack} />
 
       <div className="p-4 space-y-4 max-w-md mx-auto">
-        {/* Horse Banner Image matching Screenshot 9 */}
+        {/* Horse Banner Image */}
         <div className="w-full h-44 rounded-2xl overflow-hidden bg-white shadow-2xs border border-slate-200">
           <img
             src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80"
@@ -23,14 +48,26 @@ export const PollaHipicaScreen: React.FC<PollaHipicaScreenProps> = ({ onBack }) 
           />
         </div>
 
-        {/* Title matching Screenshot 9 */}
+        {/* Title */}
         <div className="text-center">
           <h2 className="text-base font-extrabold text-slate-900 font-heading">
             Crea tu propia polla hípica
           </h2>
         </div>
 
-        {/* Form fields matching Screenshot 9 */}
+        {ticketCreated && (
+          <div className="bg-emerald-50 border border-emerald-400 p-3 rounded-2xl text-emerald-800 text-xs space-y-1.5 animate-fadeIn">
+            <div className="flex items-center gap-1.5 font-bold">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>¡Ticket de Polla Hípica Generado!</span>
+            </div>
+            <p className="text-[11px] text-emerald-700 leading-snug">
+              Envía tu ticket al WhatsApp <strong>{WHATSAPP_PHONE_FORMATTED}</strong> para validarlo y sellarlo al instante con el taquillero.
+            </p>
+          </div>
+        )}
+
+        {/* Form fields */}
         <div className="space-y-3 pt-1">
           <div className="space-y-1">
             <label className="block text-xs font-bold text-slate-800">
@@ -38,7 +75,10 @@ export const PollaHipicaScreen: React.FC<PollaHipicaScreenProps> = ({ onBack }) 
             </label>
             <select
               value={date}
-              onChange={e => setDate(e.target.value)}
+              onChange={e => {
+                setDate(e.target.value);
+                setTicketCreated(false);
+              }}
               className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden"
             >
               <option value="Hoy">Hoy</option>
@@ -53,7 +93,10 @@ export const PollaHipicaScreen: React.FC<PollaHipicaScreenProps> = ({ onBack }) 
             </label>
             <select
               value={fee}
-              onChange={e => setFee(e.target.value)}
+              onChange={e => {
+                setFee(e.target.value);
+                setTicketCreated(false);
+              }}
               className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden"
             >
               <option value="Bs. 10,00">Bs. 10,00</option>
@@ -62,10 +105,21 @@ export const PollaHipicaScreen: React.FC<PollaHipicaScreenProps> = ({ onBack }) 
             </select>
           </div>
 
+          {/* Venta Directa por WhatsApp Button */}
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3.5 px-4 bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 shadow-md active:scale-98 transition-all text-center no-underline"
+          >
+            <MessageCircle className="w-4 h-4 fill-white shrink-0" />
+            <span>Comprar Ticket por WhatsApp ({WHATSAPP_PHONE_FORMATTED})</span>
+          </a>
+
           {/* Purple Button: Crear Polla */}
           <button
-            onClick={() => {}}
-            className="w-full mt-4 py-3 bg-[#4E0A7D] text-white font-bold rounded-xl text-xs active:scale-98 transition-all"
+            onClick={handleCrearPolla}
+            className="w-full py-3 bg-[#4E0A7D] hover:bg-[#600f99] text-white font-bold rounded-xl text-xs active:scale-98 transition-all"
           >
             Crear Polla
           </button>
