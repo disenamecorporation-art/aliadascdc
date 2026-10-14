@@ -31,7 +31,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     }
   }, [initialIdentifier]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -46,7 +46,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     }
 
     setIsLoading(true);
-    const res = login(cleanId, password);
+    const res = await login(cleanId, password);
     setIsLoading(false);
 
     if (res.success) {

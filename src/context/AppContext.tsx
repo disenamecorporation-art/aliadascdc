@@ -39,7 +39,7 @@ interface AppContextType {
   currentRole: UserRole;
   isLoggedIn: boolean;
   setCurrentRole: (role: UserRole) => void;
-  login: (emailOrUser: string, pass: string) => { success: boolean; message?: string };
+  login: (emailOrUser: string, pass: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   registerClient: (data: Partial<User> & { passwordConfirm?: string }) => Promise<{ success: boolean; message: string; user?: User }>;
   requestPasswordReset: (email: string) => { success: boolean; message: string };
@@ -217,11 +217,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Auth methods
-  const login = (emailOrUser: string, pass: string) => {
+  const login = async (emailOrUser: string, pass: string): Promise<{ success: boolean; message?: string }> => {
     const cleanQuery = emailOrUser.trim().toLowerCase();
     const cleanNumbers = cleanQuery.replace(/\D/g, '');
 
-    const user = users.find(
+    let user = users.find(
       u => {
         const uEmail = (u.email || '').toLowerCase().trim();
         const uName = (u.name || '').toLowerCase().trim();
@@ -238,7 +238,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (!matchesIdentifier) return false;
 
-        // Password matching: check user password, or fallback defaults
         return (
           u.password === pass ||
           (u.password || '').trim() === pass.trim() ||
@@ -250,6 +249,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         );
       }
     );
+
+    // Si no se encuentra en memoria local, consultar Supabase directamente en tiempo real
+    const client = getSupabaseClient();
+    if (!user && client) {
+      try {
+        const { data: remoteProfiles } = await client
+          .from('profiles')
+          .select('*');
+
+        if (remoteProfiles && remoteProfiles.length > 0) {
+          const match = remoteProfiles.find((p: any) => {
+            const pEmail = (p.email || '').toLowerCase().trim();
+            const pCedula = (p.cedula || '').toLowerCase().trim();
+            const pCedulaDigits = pCedula.replace(/\D/g, '');
+            const pName = (p.name || '').toLowerCase().trim();
+            const pRef = (p.referral_code || '').toLowerCase().trim();
+
+            return (
+              pEmail === cleanQuery ||
+              pName === cleanQuery ||
+              pCedula === cleanQuery ||
+              (cleanNumbers && pCedulaDigits === cleanNumbers) ||
+              pRef === cleanQuery
+            );
+          });
+
+          if (match) {
+            user = {
+              id: match.id,
+              name: match.name || 'Cliente',
+              lastName: match.last_name || '',
+              cedula: match.cedula || '',
+              phone: match.phone || '',
+              email: match.email || '',
+              password: match.password || 'password123',
+              role: match.role || 'cliente',
+              status: match.status || 'activo',
+              taquillaId: match.taquilla_id || 'taq_1',
+              taquillaName: match.taquilla_name || 'Taquilla La 1',
+              balance: Number(match.balance || 0),
+              bonusBalance: Number(match.bonus_balance || 0),
+              referralCode: match.referral_code || `ALIADAS-${Math.floor(1000 + Math.random() * 9000)}`,
+              avatarUrl: match.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+              createdAt: match.created_at || getNowFormatted()
+            };
+            setUsers(prev => [user!, ...prev]);
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase direct login notice:', err);
+      }
+    }
 
     if (!user) {
       return {
