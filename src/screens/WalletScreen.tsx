@@ -53,8 +53,16 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
             <span className="text-[11px] font-semibold">Saldo Disponible</span>
           </div>
           <div className="text-3xl font-extrabold text-white tracking-tight font-heading pl-1">
-            120,50
+            120,50 Bs.
           </div>
+        </div>
+
+        {/* Explicación de la Billetera & Enviar Cap */}
+        <div className="bg-white border border-purple-100 rounded-2xl p-4 shadow-2xs space-y-2">
+          <h4 className="text-xs font-bold text-[#4E0A7D]">¿Cómo funciona tu Billetera y Depósitos?</h4>
+          <p className="text-[11px] text-slate-600 leading-relaxed">
+            Tu billetera acumula tus recargas y ganancias. Para recargar saldo o <strong>enviar tu cap (comprobante de pago móvil)</strong>, haz clic en <strong>Depositar</strong> para reportarlo por WhatsApp o transferencias.
+          </p>
         </div>
 
         {/* 2 Big Action Buttons matching Screenshot 5 */}

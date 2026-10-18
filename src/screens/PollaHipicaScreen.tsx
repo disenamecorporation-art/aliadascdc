@@ -10,21 +10,21 @@ interface PollaHipicaScreenProps {
 
 export const PollaHipicaScreen: React.FC<PollaHipicaScreenProps> = ({ onBack }) => {
   const { currentUser } = useApp();
+  const bcvRate = 45.50; // Tasa BCV actual oficial
   const [date, setDate] = useState('Hoy');
-  const [fee, setFee] = useState('Bs. 10,00');
+  const [feeUsd, setFeeUsd] = useState<number>(1);
   const [ticketCreated, setTicketCreated] = useState(false);
 
+  const calculatedBs = feeUsd * bcvRate;
+
   const getNumericFee = () => {
-    if (fee.includes('10')) return 10;
-    if (fee.includes('20')) return 20;
-    if (fee.includes('50')) return 50;
-    return 10;
+    return Math.round(calculatedBs * 100) / 100;
   };
 
   const whatsappUrl = generateWhatsAppLink({
     tipo: 'Polla Hípica',
     montoBs: getNumericFee(),
-    detalle: `Carreras Fecha: ${date}`,
+    detalle: `Carreras Fecha: ${date} ($${feeUsd} USD al BCV Bs. ${bcvRate})`,
     clienteNombre: currentUser ? `${currentUser.name} ${currentUser.lastName}` : 'Cliente Aliadas',
     cedula: currentUser?.cedula || 'N/A',
     taquilla: currentUser?.taquillaName || 'Taquilla La 1'
@@ -49,10 +49,13 @@ export const PollaHipicaScreen: React.FC<PollaHipicaScreenProps> = ({ onBack }) 
         </div>
 
         {/* Title */}
-        <div className="text-center">
+        <div className="text-center space-y-1">
           <h2 className="text-base font-extrabold text-slate-900 font-heading">
             Crea tu propia polla hípica
           </h2>
+          <p className="text-[11px] text-emerald-700 font-bold bg-emerald-50 py-1 px-3 rounded-full inline-block border border-emerald-200">
+            Tasa BCV oficial: $1 = Bs. {bcvRate.toFixed(2).replace('.', ',')} (Varía según BCV)
+          </p>
         </div>
 
         {ticketCreated && (
@@ -89,19 +92,20 @@ export const PollaHipicaScreen: React.FC<PollaHipicaScreenProps> = ({ onBack }) 
 
           <div className="space-y-1">
             <label className="block text-xs font-bold text-slate-800">
-              Monto por participación
+              Monto por participación ($ USD convertido a BCV)
             </label>
             <select
-              value={fee}
+              value={feeUsd}
               onChange={e => {
-                setFee(e.target.value);
+                setFeeUsd(Number(e.target.value));
                 setTicketCreated(false);
               }}
               className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden"
             >
-              <option value="Bs. 10,00">Bs. 10,00</option>
-              <option value="Bs. 20,00">Bs. 20,00</option>
-              <option value="Bs. 50,00">Bs. 50,00</option>
+              <option value={1}>$1 USD (Bs. {(1 * bcvRate).toFixed(2).replace('.', ',')})</option>
+              <option value={2}>$2 USD (Bs. {(2 * bcvRate).toFixed(2).replace('.', ',')})</option>
+              <option value={5}>$5 USD (Bs. {(5 * bcvRate).toFixed(2).replace('.', ',')})</option>
+              <option value={10}>$10 USD (Bs. {(10 * bcvRate).toFixed(2).replace('.', ',')})</option>
             </select>
           </div>
 

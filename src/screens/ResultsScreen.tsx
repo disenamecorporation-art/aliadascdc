@@ -23,7 +23,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ onBack }) => {
       date: '02/10/2025',
       icon: '🏛️',
       balls: ['12', '15', '23', '34', '56'],
-      type: 'numbers'
+      type: 'Triples',
+      category: 'Triples'
     },
     {
       id: '2',
@@ -31,7 +32,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ onBack }) => {
       date: '02/10/2025',
       icon: '🎯',
       balls: ['03', '08', '16', '27', '44'],
-      type: 'numbers'
+      type: 'Triples',
+      category: 'Triples'
     },
     {
       id: '3',
@@ -39,7 +41,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ onBack }) => {
       date: '02/10/2025',
       icon: '⚡',
       balls: ['05', '11', '18', '25', '37'],
-      type: 'numbers'
+      type: 'Triples',
+      category: 'Triples'
     },
     {
       id: '4',
@@ -47,7 +50,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ onBack }) => {
       date: '02/10/2025',
       icon: '🏙️',
       balls: ['07', '14', '21', '33', '48'],
-      type: 'numbers'
+      type: 'Terminales',
+      category: 'Terminales'
     },
     {
       id: '5',
@@ -55,7 +59,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ onBack }) => {
       date: '02/10/2025',
       icon: '🐾',
       balls: ['🐯', '🐬', '🦊', '🦁', '🐘'],
-      type: 'animals'
+      type: 'Animalitos',
+      category: 'Animalitos'
     },
     {
       id: '6',
@@ -63,9 +68,14 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ onBack }) => {
       date: '02/10/2025',
       icon: '🏇',
       balls: ['🏇', '🐎', '🏇'],
-      type: 'horses'
+      type: 'Caballos',
+      category: 'Caballos'
     }
   ];
+
+  const filteredResults = filter === 'Todas' 
+    ? resultsList 
+    : resultsList.filter(r => r.category === filter);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 text-slate-800 select-none">
@@ -91,42 +101,48 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({ onBack }) => {
 
         {/* Results Cards matching Screenshot 11 */}
         <div className="space-y-3">
-          {resultsList.map(res => (
-            <div
-              key={res.id}
-              className="bg-white border border-slate-200 rounded-2xl p-3.5 flex items-center justify-between shadow-2xs"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-lg shrink-0">
-                  {res.icon}
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-slate-900 leading-tight">
-                    {res.title}
-                  </h3>
-                  <p className="text-[10px] text-slate-400">
-                    {res.date}
-                  </p>
-                </div>
-              </div>
-
-              {/* Number Balls with circular outline matching screenshot */}
-              <div className="flex items-center gap-1">
-                {res.balls.map((b, idx) => (
-                  <div
-                    key={idx}
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                      res.type === 'numbers'
-                        ? 'border border-slate-800 text-slate-900 font-mono bg-white'
-                        : 'bg-slate-50 text-sm'
-                    }`}
-                  >
-                    {b}
-                  </div>
-                ))}
-              </div>
+          {filteredResults.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center text-xs text-slate-500">
+              No hay resultados disponibles para esta categoría.
             </div>
-          ))}
+          ) : (
+            filteredResults.map(res => (
+              <div
+                key={res.id}
+                className="bg-white border border-slate-200 rounded-2xl p-3.5 flex items-center justify-between shadow-2xs"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-lg shrink-0">
+                    {res.icon}
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900 leading-tight">
+                      {res.title}
+                    </h3>
+                    <p className="text-[10px] text-slate-400">
+                      {res.date}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Number Balls with circular outline matching screenshot */}
+                <div className="flex items-center gap-1">
+                  {res.balls.map((b, idx) => (
+                    <div
+                      key={idx}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                        res.type !== 'Animalitos' && res.type !== 'Caballos'
+                          ? 'border border-slate-800 text-slate-900 font-mono bg-white'
+                          : 'bg-slate-50 text-sm'
+                      }`}
+                    >
+                      {b}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

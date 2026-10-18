@@ -43,6 +43,20 @@ const MainAppContent: React.FC = () => {
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [targetObsUserId, setTargetObsUserId] = useState<string | undefined>(undefined);
 
+  React.useEffect(() => {
+    window.history.pushState({ app: true }, '');
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      window.history.pushState({ app: true }, '');
+      if (currentScreen !== 'login' && currentScreen !== 'inicio' && currentScreen !== 'splash') {
+        setCurrentScreen('inicio');
+        setActiveTab('inicio');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentScreen]);
+
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     if (tab === 'inicio') {

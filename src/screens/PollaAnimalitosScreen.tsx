@@ -11,14 +11,14 @@ interface PollaAnimalitosScreenProps {
 export const PollaAnimalitosScreen: React.FC<PollaAnimalitosScreenProps> = ({ onBack }) => {
   const { currentUser } = useApp();
   const [date, setDate] = useState('Hoy');
-  const [fee, setFee] = useState('Bs. 10,00');
+  const [fee, setFee] = useState('Bs. 100,00');
   const [ticketCreated, setTicketCreated] = useState(false);
 
   const getNumericFee = () => {
-    if (fee.includes('10')) return 10;
-    if (fee.includes('20')) return 20;
-    if (fee.includes('50')) return 50;
-    return 10;
+    if (fee.includes('100')) return 100;
+    if (fee.includes('200')) return 200;
+    if (fee.includes('500')) return 500;
+    return 100;
   };
 
   const whatsappUrl = generateWhatsAppLink({
@@ -102,9 +102,9 @@ export const PollaAnimalitosScreen: React.FC<PollaAnimalitosScreenProps> = ({ on
               }}
               className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden"
             >
-              <option value="Bs. 10,00">Bs. 10,00</option>
-              <option value="Bs. 20,00">Bs. 20,00</option>
-              <option value="Bs. 50,00">Bs. 50,00</option>
+              <option value="Bs. 100,00">Bs. 100,00</option>
+              <option value="Bs. 200,00">Bs. 200,00</option>
+              <option value="Bs. 500,00">Bs. 500,00</option>
             </select>
           </div>
 
